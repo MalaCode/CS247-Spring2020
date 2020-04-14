@@ -3,6 +3,16 @@ import matplotlib.pyplot as plt
 from datetime import datetime, timedelta
 from collections import defaultdict 
 
+
+#################################
+# This script creates datetime data from the csv file,
+# then plots the number of confirmed cases vs the dates 
+# of the reported cases. Finally, it counts the amount of times
+# the number of cases has doubled. 
+#
+# For now just does it for one country or state/province.
+##################################
+
 def split(date): 
     return [char for char in date] 
 
@@ -66,6 +76,7 @@ with open('time_series_covid19_confirmed_global.txt') as csv_file:
             #if there is a state/province, the state/province is the dict key
             country_data[row[0]] = row[2:]
 
+# Replace Sweden with any state/province or any country without states/provinces
 x = get_dates()
 y = get_country_data('Sweden')
 check_case_doubles('Sweden', x, y)
