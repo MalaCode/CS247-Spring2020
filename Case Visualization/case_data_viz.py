@@ -29,9 +29,7 @@ def get_country_data(country):
     y_temp= country_data[country]
     y = y_temp[2:]
     y_ints = []
-    for i in range(0, len(y)):
-        y_i = int(y[i])
-        y_ints.append(y_i)
+    y_ints = list(map(int, y))
     return y_ints
 
 def plot_data(country):
@@ -62,9 +60,10 @@ with open('time_series_covid19_confirmed_global.txt') as csv_file:
             line_count += 1
             column_names.append(row)
         else:
-            line_count += 1
             if row[0] == '':
+                #if there's no state/province, the country is the dict key
                 country_data[row[1]] = row[2:]
+            #if there is a state/province, the state/province is the dict key
             country_data[row[0]] = row[2:]
 
 x = get_dates()
