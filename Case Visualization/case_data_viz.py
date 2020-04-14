@@ -42,7 +42,7 @@ def get_country_data(country):
     y_ints = list(map(int, y))
     return y_ints
 
-def plot_data(country):
+def plot_data(x, y, country):
     plt.plot_date(x, y, linestyle='solid')
     title = country + ' COVID-19 Case Growth'
     plt.title(title)
@@ -57,6 +57,12 @@ def check_case_doubles(country, dates, cases):
         if (cases[i+1] >= 2*cases[i]):
             doubles += 1
     print('The number of cases in ' + country + ' has doubled ' + str(doubles) + ' times.')
+
+def visualize(place):
+    x = get_dates()
+    y = get_country_data(place)
+    check_case_doubles(place, x, y)
+    plot_data(x, y, place)
 
 #################################################################
 
@@ -77,8 +83,5 @@ with open('time_series_covid19_confirmed_global.txt') as csv_file:
             country_data[row[0]] = row[2:]
 
 # Replace Sweden with any state/province or any country without states/provinces
-x = get_dates()
-y = get_country_data('Sweden')
-check_case_doubles('Sweden', x, y)
-plot_data('Sweden')
+visualize('Sweden')
 
