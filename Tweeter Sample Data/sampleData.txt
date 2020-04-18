@@ -1,0 +1,1 @@
+This is a folder of a sample data of 27k tweets. the jupyter notebook is running LDA on the tweets.
