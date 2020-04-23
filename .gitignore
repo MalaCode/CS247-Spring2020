@@ -1,2 +1,5 @@
 Temperature/temperatureData.csv
 Temperature/tempData
+
+venv/
+.vscode/
