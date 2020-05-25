@@ -7,7 +7,7 @@ from sklearn.utils.validation import column_or_1d
 
 CWD = os.getcwd()
 DATA_PATH = os.path.join(CWD, "unifiedUSData/")
-DATA_PATH_COVID = os.path.join(CWD, "CovidTracking/US_historic_data")
+DATA_PATH_COVID = os.path.join(CWD, "CovidTracking/US_historic_data.csv")
 
 def load(state="New York", target="positive"):
     df = pd.read_csv(DATA_PATH + state + ".csv")
@@ -25,7 +25,7 @@ def load(state="New York", target="positive"):
     cor_target = abs(cor["positive"])
     #Selecting highly correlated features
     relevant_features = cor_target[cor_target>0.5]
-    print(relevant_features)
+    # print(relevant_features)
 
     # Drop state-dependent columns if we care about the entire US.
     # if state == "allStates":
@@ -48,7 +48,7 @@ def load(state="New York", target="positive"):
     X = df.drop([target], axis=1, inplace=True)
     num_col = len(df.columns)
     X = df[list(df.columns)].to_numpy()
-
+ 
     # For testing purpose only: keep only the relevant one feature
     X = df[df.columns[[0]]].to_numpy()
 
@@ -60,6 +60,29 @@ def loadCovidTracking(target="positive"):
 
     # replace NaN with 0
     df.fillna(0, inplace=True)
+    df.drop(["hash", "dateChecked", "states", "total", "totalTestResults"], axis=1, inplace=True)
+
+    df = df.drop(df.index[-37:])
+
+    # X = df[df.columns[[0]]].to_numpy()
+    y = df[[target]].to_numpy()
+
+    # df.drop([target], axis=1, inplace=True)
+    # X = df[list(df.columns)].to_numpy()
+    X = df[["negative", "hospitalizedCumulative", "inIcuCumulative", "recovered", "death"]].to_numpy()
+
+    # correlation
+    cor = df.corr()
+    # sns.heatmap(cor, annot=True, cmap=plt.cm.Reds)
+    # plt.show()
+    #Correlation with output variable
+    cor_target = abs(cor["positive"])
+    #Selecting highly correlated features
+    relevant_features = cor_target[cor_target>0.5]
+    # print(relevant_features)
+
+    return X, y
 
 
-load()
+
+loadCovidTracking()
