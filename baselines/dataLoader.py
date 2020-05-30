@@ -57,19 +57,21 @@ def load(state="New York", target="positive"):
 
 def loadCovidTracking(target="positive"):
     df = pd.read_csv(DATA_PATH_COVID)
+    df = df.reindex(index=df.index[::-1])
 
     # replace NaN with 0
     df.fillna(0, inplace=True)
     df.drop(["hash", "dateChecked", "states", "total", "totalTestResults"], axis=1, inplace=True)
 
-    df = df.drop(df.index[-37:])
+    df = df.drop(df.index[:37])
 
     # X = df[df.columns[[0]]].to_numpy()
     y = df[[target]].to_numpy()
 
     # df.drop([target], axis=1, inplace=True)
     # X = df[list(df.columns)].to_numpy()
-    X = df[["negative", "hospitalizedCumulative", "inIcuCumulative", "recovered", "death"]].to_numpy()
+    # X = df[["negative", "hospitalizedCumulative", "inIcuCumulative", "recovered", "death"]].to_numpy()
+    X = df[["positive"]].to_numpy()
 
     # correlation
     cor = df.corr()

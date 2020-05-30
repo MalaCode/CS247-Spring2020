@@ -1,10 +1,13 @@
 import torch
 import torch.nn.functional as F
 
+import matplotlib.pyplot as plt
+
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LogisticRegression, LinearRegression
 from sklearn.naive_bayes import MultinomialNB
-from sklearn.metrics import mean_squared_log_error
+from sklearn.metrics import mean_squared_log_error, mean_squared_error
+from sklearn.model_selection import learning_curve
 
 
 from dataLoader import load, loadCovidTracking
@@ -80,9 +83,16 @@ def run_linear(X_train, X_test, y_train, y_test):
     clf.fit(X_train, y_train)
 
     y_pred = clf.predict(X_test)
+
+    plt.plot(y_test, label="gt")
+    plt.plot(y_pred, label="pred")
+    plt.legend()
+    plt.suptitle('Linear Regression - Tested Positve')
+    plt.savefig("baselines/linear.png")
     # print(y_test, y_pred)
-    error = mean_squared_log_error(y_test, y_pred)
-    print("Linear Regression:", error)
+    log_error = mean_squared_log_error(y_test, y_pred)
+    error = mean_squared_error(y_test, y_pred)
+    print("Linear Regression: MSE:", error, "; log:", log_error)
 
 
 def run_lr(X_train, X_test, y_train, y_test):
@@ -110,9 +120,12 @@ def main():
     # print(len(X))
     # print(y)
     # exit()
+    n = y.shape[0]
+    train_size = int(n * 2 / 3)
 
-    X_train, X_test = X[-40:], X[:-40]
-    y_train, y_test = y[-40:], y[:-40]
+    X_train, X_test = X[:train_size], X[train_size:]
+    y_train, y_test = y[:train_size], y[train_size:]
+    print("size", train_size)
 
     # split data
     # X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42, shuffle=False)
@@ -121,10 +134,10 @@ def main():
     # print(X_train.shape, X_train)
     # print(X_train.shape, X_train)
 
-    # run_linear(X_train, X_test, y_train, y_test)
+    run_linear(X_train, X_test, y_train, y_test)
     # run_lr(X_train, X_test, y_train, y_test)
     # run_naive_bayes(X_train, X_test, y_train, y_test)
-    run_nn(X_train, X_test, y_train, y_test)
+    # run_nn(X_train, X_test, y_train, y_test)
 
 # test = torch.cat([torch.randn(1, 3) for _ in range(5)])
 # print(test.shape, test)
