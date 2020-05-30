@@ -1,5 +1,6 @@
 Temperature/temperatureData.csv
 Temperature/tempData
+baselines/__pycache__/
 
 venv/
 .vscode/

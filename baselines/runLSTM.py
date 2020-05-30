@@ -1,4 +1,5 @@
 import os
+import copy
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -26,11 +27,9 @@ class LSTM(nn.Module):
         self.num_layers = num_layers
         self.input_size = input_size
         self.hidden_size = hidden_size
-        # self.seq_length = seq_length
         
         self.lstm = nn.LSTM(input_size=input_size, hidden_size=hidden_size,
-                            num_layers=num_layers, batch_first=True)#, dropout=0.4)
-        
+                            num_layers=num_layers, batch_first=True)
         self.fc = nn.Linear(hidden_size, num_classes)
 
     def forward(self, x):
@@ -49,45 +48,30 @@ class LSTM(nn.Module):
         
         return out
 
-def plot_data(data):
-    # target_set = df[[target]].values
+# get the data frame from csv
+df = pd.read_csv(DATA_PATH_TWITTER)
 
+# choose sentiment features to use from the list ["AvgSentiment", "AvgTopicContrib", "Negative", "Positive", "Neutral"]
+# e.g. sentiment_features = ["Negative", "Positive", "Neutral"]
+# sentiment_features = ["Negative", "Positive", "Neutral"]
+sentiment_features = ["AvgSentiment"]
 
-    plt.plot(data)
-    plt.show()
+# the target we want to predict
+target = "testPositive"
 
+# whether to use sentiment features
+use_sentiment_features = True
 
-# use twitter sentiment dataset or Covid tracking dataset
-use_twitter = True
-
-if not use_twitter:
-    df = pd.read_csv(DATA_PATH_COVID)
-    df = df.reindex(index=df.index[::-1])
-    # replace NaN with 0
-    df.fillna(0, inplace=True)
-    df.drop(["hash", "dateChecked", "states", "total", "totalTestResults"], axis=1, inplace=True)
-
-    df = df.drop(df.index[:37])
-
-    target = "positive"
-    features = ["negative", "hospitalizedCumulative", "inIcuCumulative", "recovered", "death"]
-    features = ["positive"]
-else:
-    df = pd.read_csv(DATA_PATH_TWITTER)
-
-    features = ["AvgSentiment"]
-    # features = ["AvgSentiment", "AvgTopicContrib", "Negative", "Positive", "Neutral", "testPositive"]
-    # features = ["Negative", "Positive", "Neutral"]
-    target = "testPositive"
-
-use_sentiment_features = False
-related_features = ["", "death", "totalTested", "hospitalizedIncrease"]
+# features other than the above sentiment features that we want to use in the training.
+# name of the feature is the column header name in the csv file
+related_features = ["death", "totalTested", "hospitalizedIncrease", "temp"]
 for rf in related_features:
-    if rf and use_sentiment_features:
-        features.append(rf)
-    elif rf and not use_sentiment_features:
-        features = [rf]
+    if use_sentiment_features:
+        features = sentiment_features.copy()
+    else:
+        features = []
 
+    features.append(rf)
 
     # scale the data
     scaler_t = MinMaxScaler()
@@ -95,8 +79,6 @@ for rf in related_features:
     target_set = scaler_t.fit_transform(df[[target]])
     features_set = [scaler_f.fit_transform(df[[feature]]) for feature in features]
     features_set = np.transpose(features_set, (1, 0, 2))
-
-    # convert to Torch Tensor
 
     n = target_set.shape[0]
     train_size = int(n * 2 / 3)
@@ -121,15 +103,12 @@ for rf in related_features:
     input_size = 1
     hidden_size = 2
     num_layers = 1
-    dropout = 0
-
     num_classes = 1
 
     lstm = LSTM(num_classes, input_size, hidden_size, num_layers)
 
     criterion = torch.nn.MSELoss()    # mean-squared error for regression
     optimizer = torch.optim.Adam(lstm.parameters(), lr=learning_rate)
-    #optimizer = torch.optim.SGD(lstm.parameters(), lr=learning_rate)
 
     # Train the model
     for epoch in range(num_epochs):
@@ -150,27 +129,27 @@ for rf in related_features:
     lstm.eval()
     train_predict = lstm(testX)
 
+    # convert torch output to numpy
     data_predict = train_predict.data.numpy()
     dataY_plot = testY.data.numpy()
 
+    # revert the scaling done before the training to display real numbers
     data_predict = scaler_t.inverse_transform(data_predict)
     dataY_plot = scaler_t.inverse_transform(dataY_plot)
 
-    # plt.axvline(x=train_size, c='r', linestyle='--')
-    print("y", dataY_plot)
-    print("pred", data_predict)
-    error = mean_squared_error(dataY_plot, data_predict)
+    # calculate the root mean squared error for prediction
+    rmse = np.sqrt(mean_squared_error(dataY_plot, data_predict))
 
     plt.figure()
     plt.plot(dataY_plot, label="gt")
     plt.plot(data_predict, label="pred")
     plt.legend()
     if use_sentiment_features:
-        plt.suptitle('LSTM - Tested Positive - Using sentiment (error: {}, feature: {})'.format(error, rf))
-        plt.savefig("baselines/lstm_{}_sentiment.png".format(rf))
+        plt.suptitle('With sentiment - rmse: {}, feature: {}'.format(rmse, rf))
+        plt.savefig("baselines/plots_lr001/{}_{}_sentiment.png".format(rf, '_'.join(sentiment_features)))
     else:
-        plt.suptitle('LSTM - Tested Positive - No sentiment (error: {}, feature: {})'.format(error, rf))
-        plt.savefig("baselines/lstm_{}.png".format(rf))
+        plt.suptitle('No sentiment (error: {}, feature: {})'.format(rmse, rf))
+        plt.savefig("baselines/plots_lr001/{}.png".format(rf))
     
 
 
