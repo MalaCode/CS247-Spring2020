@@ -25,7 +25,7 @@ def load(state="New York", target="positive"):
     cor_target = abs(cor["positive"])
     #Selecting highly correlated features
     relevant_features = cor_target[cor_target>0.5]
-    # print(relevant_features)
+    print(relevant_features)
 
     # Drop state-dependent columns if we care about the entire US.
     # if state == "allStates":
@@ -81,7 +81,7 @@ def loadCovidTracking(target="positive"):
     cor_target = abs(cor["positive"])
     #Selecting highly correlated features
     relevant_features = cor_target[cor_target>0.5]
-    # print(relevant_features)
+    print(relevant_features)
 
     return X, y
 
