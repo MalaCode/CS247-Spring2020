@@ -7,6 +7,8 @@ import pandas as pd
 import torch
 import torch.nn as nn
 
+import seaborn as sns
+
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_squared_log_error, mean_squared_error
@@ -16,7 +18,8 @@ from sklearn.metrics import mean_squared_log_error, mean_squared_error
 CWD = os.getcwd()
 DATA_PATH = os.path.join(CWD, "unifiedUSData/")
 DATA_PATH_COVID = os.path.join(CWD, "CovidTracking/US_historic_data.csv")
-DATA_PATH_TWITTER = os.path.join(CWD, "TweetSentiment/topic_4.csv")
+topic = "topic_4"
+DATA_PATH_TWITTER = os.path.join(CWD, "TweetSentiment/{}.csv".format(topic))
 
 class LSTM(nn.Module):
 
@@ -51,6 +54,16 @@ class LSTM(nn.Module):
 # get the data frame from csv
 df = pd.read_csv(DATA_PATH_TWITTER)
 
+# cor = df.corr()
+# sns.heatmap(cor, annot=True, cmap=plt.cm.Reds)
+# plt.show()
+#Correlation with output variable
+# cor_target = abs(cor["testPositive"])
+# relevant_features = cor_target[cor_target>0]
+# print(relevant_features)
+
+# exit()
+
 # choose sentiment features to use from the list ["AvgSentiment", "AvgTopicContrib", "Negative", "Positive", "Neutral"]
 # e.g. sentiment_features = ["Negative", "Positive", "Neutral"]
 # sentiment_features = ["Negative", "Positive", "Neutral"]
@@ -64,7 +77,8 @@ use_sentiment_features = True
 
 # features other than the above sentiment features that we want to use in the training.
 # name of the feature is the column header name in the csv file
-related_features = ["death", "totalTested", "hospitalizedIncrease", "temp"]
+related_features = ["death", "totalTested", "hospitalizedIncrease", "temp", "airTravel", "zoom"]
+# related_features = ["zoom"]
 for rf in related_features:
     if use_sentiment_features:
         features = sentiment_features.copy()
@@ -72,7 +86,6 @@ for rf in related_features:
         features = []
 
     features.append(rf)
-
     # scale the data
     scaler_t = MinMaxScaler()
     scaler_f = MinMaxScaler()
@@ -146,10 +159,10 @@ for rf in related_features:
     plt.legend()
     if use_sentiment_features:
         plt.suptitle('With sentiment - rmse: {}, feature: {}'.format(rmse, rf))
-        plt.savefig("baselines/plots_lr001/{}_{}_sentiment.png".format(rf, '_'.join(sentiment_features)))
+        plt.savefig("baselines/{}/{}_{}_sentiment.png".format(topic, rf, '_'.join(sentiment_features)))
     else:
         plt.suptitle('No sentiment (error: {}, feature: {})'.format(rmse, rf))
-        plt.savefig("baselines/plots_lr001/{}.png".format(rf))
+        plt.savefig("baselines/{}/{}.png".format(topic, rf))
     
 
 

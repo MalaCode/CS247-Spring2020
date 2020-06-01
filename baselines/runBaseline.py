@@ -17,7 +17,8 @@ from sklearn.model_selection import learning_curve
 # from dataLoader import load, loadCovidTracking
 
 CWD = os.getcwd()
-DATA_PATH_TWITTER = os.path.join(CWD, "TweetSentiment/topic_4.csv")
+topic = "topic_2"
+DATA_PATH_TWITTER = os.path.join(CWD, "TweetSentiment/{}.csv".format(topic))
 
 class LSTM(torch.nn.Module):
     def __init__(self, n_feature, n_hidden=10, n_output=1):
