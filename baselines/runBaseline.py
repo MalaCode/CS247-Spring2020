@@ -1,6 +1,10 @@
+import os
+
+import numpy as np
 import torch
 import torch.nn.functional as F
 
+import pandas as pd
 import matplotlib.pyplot as plt
 
 from sklearn.model_selection import train_test_split
@@ -10,18 +14,10 @@ from sklearn.metrics import mean_squared_log_error, mean_squared_error
 from sklearn.model_selection import learning_curve
 
 
-from dataLoader import load, loadCovidTracking
+# from dataLoader import load, loadCovidTracking
 
-class Net(torch.nn.Module):
-    def __init__(self, n_feature, n_hidden=10, n_output=1):
-        super(Net, self).__init__()
-        self.hidden = torch.nn.Linear(n_feature, n_hidden)   # hidden layer
-        self.predict = torch.nn.Linear(n_hidden, n_output)   # output layer
-
-    def forward(self, x):
-        x = F.relu(self.hidden(x))      # activation function for hidden layer
-        x = self.predict(x)             # linear output
-        return x
+CWD = os.getcwd()
+DATA_PATH_TWITTER = os.path.join(CWD, "TweetSentiment/topic_4.csv")
 
 class LSTM(torch.nn.Module):
     def __init__(self, n_feature, n_hidden=10, n_output=1):
@@ -36,112 +32,97 @@ class LSTM(torch.nn.Module):
 
         return x
 
-def run_nn(X_train, X_test, y_train, y_test):
-    # print(X_train.shape)
-    # print(X_train)
-    n_features = X_train.shape[1]
-    # net = Net(n_feature=n_features)
-    net = LSTM(n_feature=n_features)
-    optimizer = torch.optim.SGD(net.parameters(), lr=0.001)
-    loss_func = torch.nn.MSELoss() 
 
-    X_train = torch.Tensor(X_train)
-    y_train = torch.Tensor(y_train)
-    X_test = torch.Tensor(X_test)
-    y_test = torch.Tensor(y_test)
-
-    epochs = 100
-    
-    for e in range(epochs):
-        running_loss = 0
-        for i in range(len(X_train)):
-            test = X_train[i].view(1, 1, n_features)
-            # print(type(test), test.shape, test)
-            
-            prediction = net(test)     # input x and predict based on x
-            # print(prediction)
-            # print(y_train[i])
-
-            loss = loss_func(prediction, y_train[i].view(1, 1, 1))     # must be (1. nn output, 2. target)
-
-            optimizer.zero_grad()   # clear gradients for next train
-            loss.backward()         # backpropagation, compute gradients
-            running_loss += loss.item()
-            optimizer.step()        # apply gradients
-        print(e, running_loss/len(X_train))
-    # print(X_test[0], X_train[0])
-    # print(net(X_test[0]))
-    print(X_test)
-    y_pred = [net(X_test[i].view(1, 1, n_features)) for i in range(len(X_test))]
-    print(y_pred)
-    # print(running_loss)
-
-    
-
-def run_linear(X_train, X_test, y_train, y_test):
+def run_linear(X_train, X_test, y_train):
     clf = LinearRegression()
     clf.fit(X_train, y_train)
 
     y_pred = clf.predict(X_test)
 
-    plt.plot(y_test, label="gt")
-    plt.plot(y_pred, label="pred")
-    plt.legend()
-    plt.suptitle('Linear Regression - Tested Positve')
-    plt.savefig("baselines/linear.png")
-    # print(y_test, y_pred)
-    log_error = mean_squared_log_error(y_test, y_pred)
-    error = mean_squared_error(y_test, y_pred)
-    print("Linear Regression: MSE:", error, "; log:", log_error)
+    return y_pred
 
 
-def run_lr(X_train, X_test, y_train, y_test):
+def run_lr(X_train, X_test, y_train):
     clf = LogisticRegression(max_iter=10000)
     clf.fit(X_train, y_train)
 
     y_pred = clf.predict(X_test)
-    # print(y_pred)
-    error = mean_squared_log_error(y_test, y_pred)
-    print("Logistic Regression", error)
+    
+    return y_pred
 
-def run_naive_bayes(X_train, X_test, y_train, y_test):
+def run_naive_bayes(X_train, X_test, y_train):
     clf = MultinomialNB()
     clf.fit(X_train, y_train)
     y_pred = clf.predict(X_test)
 
-    error = mean_squared_log_error(y_test, y_pred)
-    # print(y_test, y_pred)
-    print("Naive Bayes: ", error)
+    return y_pred
 
 
 def main():
     # load the data
-    X, y = loadCovidTracking()
-    # print(len(X))
-    # print(y)
-    # exit()
-    n = y.shape[0]
-    train_size = int(n * 2 / 3)
+    # X, y = loadCovidTracking()
 
-    X_train, X_test = X[:train_size], X[train_size:]
-    y_train, y_test = y[:train_size], y[train_size:]
-    print("size", train_size)
+    df = pd.read_csv(DATA_PATH_TWITTER)
 
-    # split data
-    # X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42, shuffle=False)
-    # print(X_train.shape, X_train)
-    # print(y_train.shape, y_train)
-    # print(X_train.shape, X_train)
-    # print(X_train.shape, X_train)
+    target = "testPositive"
+    y = df[[target]].to_numpy()
 
-    run_linear(X_train, X_test, y_train, y_test)
-    # run_lr(X_train, X_test, y_train, y_test)
-    # run_naive_bayes(X_train, X_test, y_train, y_test)
-    # run_nn(X_train, X_test, y_train, y_test)
+    sentiment_features = ["AvgSentiment", "Negative", "Positive", "Neutral"]
 
-# test = torch.cat([torch.randn(1, 3) for _ in range(5)])
-# print(test.shape, test)
-# print(test.view(len(test), 1, -1), test.view(len(test), 1, -1).shape)
+    use_sentiment_features = False
+    related_features = ["death", "totalTested", "hospitalizedIncrease", "temp", "airTravel", "zoom"]
+
+    for rf in related_features:
+        if use_sentiment_features:
+            features = sentiment_features.copy()
+        else:
+            features = []
+
+        features.append(rf)
+        X = df[features].to_numpy()
+        trainX, testX, trainY, testY = train_test_split(X, y, test_size=0.3, random_state=42, shuffle=True)
+
+        predY = run_lr(trainX, testX, trainY)
+
+        rmse = np.sqrt(mean_squared_error(testY, predY))
+
+        plt.figure()
+        plt.plot(testY, label="gt")
+        plt.plot(predY, label="pred")
+        plt.legend()
+        if use_sentiment_features:
+            plt.suptitle('With sentiment - rmse: {}, feature: {}, algo: linear'.format(rmse, rf))
+            plt.savefig("baselines/base_models/logistic_regression/{}_{}_sentiment.png".format(rf, '_'.join(sentiment_features)))
+        else:
+            plt.suptitle('No sentiment (error: {}, feature: {}, algo: linear)'.format(rmse, rf))
+            plt.savefig("baselines/base_models/logistic_regression/{}.png".format(rf))
+
+    use_sentiment_features = True
+    for rf in related_features:
+        if use_sentiment_features:
+            features = sentiment_features.copy()
+        else:
+            features = []
+
+        features.append(rf)
+        X = df[features].to_numpy()
+        trainX, testX, trainY, testY = train_test_split(X, y, test_size=0.3, random_state=42, shuffle=True)
+
+        predY = run_lr(trainX, testX, trainY)
+
+        rmse = np.sqrt(mean_squared_error(testY, predY))
+
+        plt.figure()
+        plt.plot(testY, label="gt")
+        plt.plot(predY, label="pred")
+        plt.legend()
+        if use_sentiment_features:
+            plt.suptitle('With sentiment - rmse: {}, feature: {}, algo: linear'.format(rmse, rf))
+            plt.savefig("baselines/base_models/logistic_regression/{}_{}_sentiment.png".format(rf, '_'.join(sentiment_features)))
+        else:
+            plt.suptitle('No sentiment (error: {}, feature: {}, algo: linear)'.format(rmse, rf))
+            plt.savefig("baselines/base_models/logistic_regression/{}.png".format(rf))
+
 main()
 
 
